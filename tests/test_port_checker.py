@@ -92,3 +92,29 @@ class TestPortChecker:
         assert len(lines) > 0
         assert any("PON-Power" in line for line in lines)
 
+class TestPortStatus:
+    """Tests pour la classe PortStatus"""
+
+    def test_port_status_creation(self):
+        """Test : Doit créer un objet PortStatus"""
+        status = PortStatus(
+            pon_power="GOOD",
+            ack=180,
+            req=188,
+            slice_status="ONLINE"
+        )
+        assert status.pon_power == "GOOD"
+        assert status.ratio == pytest.approx(95.74, rel=0.01)
+
+    def test_to_dict(self):
+        """Test : doit convertir en disctionnaire"""
+        status = PortStatus(
+            pon_power="GOOD",
+            ack=180,
+            req=188,
+            slice_status="ONLINE"
+        )
+        result = status.to_disct()
+        assert isinstance(result, dict)
+        assert result["pon_power"] == "GOOD"
+        assert result["can_restart"] is True
