@@ -1,5 +1,5 @@
 * Stats:
     * Port: NNI-Link UP - PON-Power GOOD
     * Nb clients: 3
-    * MpcpPortRegister: 188 REQ - 180 ACK
+    * MpcpPortRegister: 200 REQ - 180 ACK
     * Slice: ONLINE depuis 2025-06-15 09:40:40
