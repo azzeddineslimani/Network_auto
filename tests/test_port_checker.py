@@ -114,7 +114,7 @@ class TestPortStatus:
             req=188,
             slice_status="ONLINE"
         )
-        result = status.to_disct()
+        result = status.to_dict()
         assert isinstance(result, dict)
         assert result["pon_power"] == "GOOD"
         assert result["can_restart"] is True
