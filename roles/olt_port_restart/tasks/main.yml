@@ -1,0 +1,91 @@
+---
+# Tasks principales du rôle olt_port_restart
+
+- name: Valider les variables requises
+  assert:
+    that:
+      - stats_file is defined and stats_file | length > 0
+      - olt is defined and olt | length > 0
+      - olt_port is defined and olt_port | length > 0
+    fail_msg: "Variables requises manquantes : stats_file, olt, olt_port"
+    quiet: true
+
+- name: Créer le dossier temporaire
+  file:
+    path: "{{ temp_dir }}"
+    state: directory
+    mode: '0755'
+
+- name: Copier le module port_checker
+  copy:
+    src: port_checker.py
+    dest: "{{ temp_dir }}/port_checker.py"
+    mode: '0644'
+
+- name: Copier le script CLI
+  copy:
+    src: check_port_cli.py
+    dest: "{{ temp_dir }}/check_port_cli.py"
+    mode: '0755'
+
+- name: Vérifier que Python 3 est disponible
+  command: python3 --version
+  register: python_check
+  changed_when: false
+  failed_when: python_check.rc != 0
+
+- name: Vérifier l'état du port OLT
+  command: "python3 {{ temp_dir }}/check_port_cli.py {{ stats_file }}"
+  register: port_check
+  ignore_errors: yes
+  changed_when: false
+
+- name: Parser le résultat JSON
+  set_fact:
+    check_result: "{{ port_check.stdout | from_json }}"
+  when: port_check.stdout is defined
+
+- name: Afficher le diagnostic
+  debug:
+    msg:
+      - "============================================"
+      - "DIAGNOSTIC DU PORT OLT"
+      - "============================================"
+      - "PON-Power     : {{ check_result.pon_power | default('N/A') }}"
+      - "REQ           : {{ check_result.req | default('N/A') }}"
+      - "ACK           : {{ check_result.ack | default('N/A') }}"
+      - "Ratio ACK/REQ : {{ check_result.ratio | default('N/A') }}%"
+      - "Slice         : {{ check_result.slice_status | default('N/A') }}"
+      - "--------------------------------------------"
+      - "Décision      : {{ check_result.message | default('N/A') }}"
+      - "============================================"
+  when: check_result is defined
+
+- name: Bloquer le redémarrage si conditions non remplies
+  fail:
+    msg: "{{ check_result.message }}"
+  when:
+    - check_result is defined
+    - not check_result.can_restart
+
+- name: Redémarrer le port OLT
+  command: "oltchiprzt.pl -h {{ olt }} -p {{ olt_port }}"
+  register: restart_result
+  when:
+    - check_result is defined
+    - check_result.can_restart
+    - not skip_restart
+
+- name: Confirmer le redémarrage
+  debug:
+    msg: "✓ Port {{ olt_port }} redémarré avec succès sur OLT {{ olt }}"
+  when:
+    - check_result is defined
+    - check_result.can_restart
+    - not skip_restart
+
+- name: Nettoyer le dossier temporaire
+  file:
+    path: "{{ temp_dir }}"
+    state: absent
+  when: check_result is defined

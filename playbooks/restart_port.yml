@@ -4,11 +4,13 @@
   gather_facts: no
   
   vars:
-    # Variables requises (peuvent être passées en -e)
+    # Variables requises
     stats_file: ""
     olt: ""
-    port: ""
-    skip_restart: false  # Pour les tests
+    olt_port: ""
+    skip_restart: false
+    # Chemin absolu vers le projet
+    project_root: "{{ playbook_dir | dirname }}"
   
   tasks:
     - name: Vérifier que les variables sont définies
@@ -16,11 +18,21 @@
         that:
           - stats_file is defined and stats_file | length > 0
           - olt is defined and olt | length > 0
-          - port is defined and port | length > 0
-        fail_msg: "Variables requises : stats_file, olt, port"
+          - olt_port is defined and olt_port | length > 0
+        fail_msg: "Variables requises : stats_file, olt, olt_port"
+    
+    - name: Construire le chemin absolu du fichier stats
+      set_fact:
+        stats_file_abs: "{{ project_root }}/{{ stats_file }}"
+      when: stats_file is not match('^/')
+    
+    - name: Utiliser le chemin fourni si déjà absolu
+      set_fact:
+        stats_file_abs: "{{ stats_file }}"
+      when: stats_file is match('^/')
     
     - name: Vérification de l'état du port
-      script: "../src/check_port_cli.py {{ stats_file }}"
+      command: "python3 {{ project_root }}/src/check_port_cli.py {{ stats_file_abs }}"
       register: port_check
       ignore_errors: yes
       changed_when: false
@@ -28,30 +40,36 @@
     - name: Parser le résultat JSON
       set_fact:
         check_result: "{{ port_check.stdout | from_json }}"
+      when: port_check.stdout is defined
     
     - name: Afficher le résultat de la vérification
       debug:
         msg:
-          - "PON-Power: {{ check_result.pon_power }}"
-          - "Ratio ACK/REQ: {{ check_result.ratio }}%"
-          - "Slice: {{ check_result.slice_status }}"
-          - "Décision: {{ check_result.message }}"
+          - "PON-Power: {{ check_result.pon_power | default('N/A') }}"
+          - "Ratio ACK/REQ: {{ check_result.ratio | default('N/A') }}%"
+          - "Slice: {{ check_result.slice_status | default('N/A') }}"
+          - "Décision: {{ check_result.message | default('N/A') }}"
+      when: check_result is defined
     
     - name: Arrêter si redémarrage bloqué
       fail:
         msg: "{{ check_result.message }}"
-      when: not check_result.can_restart
+      when: 
+        - check_result is defined
+        - not check_result.can_restart
     
     - name: Redémarrer le port OLT
-      command: "oltchiprzt.pl -h {{ olt }} -p {{ port }}"
+      command: "oltchiprzt.pl -h {{ olt }} -p {{ olt_port }}"
       register: restart_result
       when: 
+        - check_result is defined
         - check_result.can_restart
         - not skip_restart
     
     - name: Confirmer le redémarrage
       debug:
-        msg: "✓ Port {{ port }} redémarré avec succès sur OLT {{ olt }}"
+        msg: "✓ Port {{ olt_port }} redémarré avec succès sur OLT {{ olt }}"
       when: 
+        - check_result is defined
         - check_result.can_restart
         - not skip_restart

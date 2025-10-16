@@ -1,0 +1,12 @@
+---
+# Playbook de test pour le rôle
+- name: Test du rôle olt_port_restart
+  hosts: localhost
+  gather_facts: no
+  
+  roles:
+    - role: olt_port_restart
+      stats_file: /tmp/test_stats_ok.txt
+      olt: test-olt
+      olt_port: 1/1/1
+      skip_restart: true

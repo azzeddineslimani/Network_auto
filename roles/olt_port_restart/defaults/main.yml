@@ -1,0 +1,17 @@
+---
+# Variables par défaut du rôle
+
+# Fichier de statistiques du port (requis)
+stats_file: ""
+
+# Hostname ou IP de l'OLT (requis)
+olt: ""
+
+# Numéro du port (requis)
+olt_port: ""
+
+# Skip le redémarrage réel (pour tests)
+skip_restart: false
+
+# Dossier temporaire pour les scripts
+temp_dir: "/tmp/olt_automation"
