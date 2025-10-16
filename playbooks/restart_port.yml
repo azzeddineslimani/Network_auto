@@ -1,0 +1,57 @@
+---
+- name: Redémarrage automatique de port OLT
+  hosts: localhost
+  gather_facts: no
+  
+  vars:
+    # Variables requises (peuvent être passées en -e)
+    stats_file: ""
+    olt: ""
+    port: ""
+    skip_restart: false  # Pour les tests
+  
+  tasks:
+    - name: Vérifier que les variables sont définies
+      assert:
+        that:
+          - stats_file is defined and stats_file | length > 0
+          - olt is defined and olt | length > 0
+          - port is defined and port | length > 0
+        fail_msg: "Variables requises : stats_file, olt, port"
+    
+    - name: Vérification de l'état du port
+      script: "../src/check_port_cli.py {{ stats_file }}"
+      register: port_check
+      ignore_errors: yes
+      changed_when: false
+    
+    - name: Parser le résultat JSON
+      set_fact:
+        check_result: "{{ port_check.stdout | from_json }}"
+    
+    - name: Afficher le résultat de la vérification
+      debug:
+        msg:
+          - "PON-Power: {{ check_result.pon_power }}"
+          - "Ratio ACK/REQ: {{ check_result.ratio }}%"
+          - "Slice: {{ check_result.slice_status }}"
+          - "Décision: {{ check_result.message }}"
+    
+    - name: Arrêter si redémarrage bloqué
+      fail:
+        msg: "{{ check_result.message }}"
+      when: not check_result.can_restart
+    
+    - name: Redémarrer le port OLT
+      command: "oltchiprzt.pl -h {{ olt }} -p {{ port }}"
+      register: restart_result
+      when: 
+        - check_result.can_restart
+        - not skip_restart
+    
+    - name: Confirmer le redémarrage
+      debug:
+        msg: "✓ Port {{ port }} redémarré avec succès sur OLT {{ olt }}"
+      when: 
+        - check_result.can_restart
+        - not skip_restart
