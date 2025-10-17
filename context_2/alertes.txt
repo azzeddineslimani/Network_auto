@@ -1,0 +1,10 @@
+[2025-10-17 09:44:35] === DÉBUT ===
+[2025-10-17 09:44:35] ✓ Fichier lu : 4 lignes
+[2025-10-17 09:44:35] ✓ Nettoyage : 4 → 4 lignes
+[2025-10-17 09:44:35] ⚠ ALERTE 2025-07-02 10:05:00 : Latence 210ms
+[2025-10-17 09:44:35] ⚠ ALERTE 2025-07-02 10:10:00 : Bande passante 5 Mbps
+[2025-10-17 09:44:35] ⚠ ALERTE 2025-07-02 10:15:00 : Perte 8.5%
+[2025-10-17 09:44:35] ⚠ 3 anomalie(s) détectée(s)
+[2025-10-17 09:44:35] ✓ Sauvegardé dans donnees_propres.csv
+[2025-10-17 09:44:35] === FIN ===
+
