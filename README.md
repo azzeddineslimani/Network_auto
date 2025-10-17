@@ -324,4 +324,3 @@ pytest tests/ -v
 - `src/` : Code source principal, facile à tester et maintenir
 - `roles/olt_port_restart/files/` : Code embarqué pour l'autonomie du rôle
 - Compromis entre maintenabilité et portabilité
-
